@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>PD Measure</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0c0c12;color:#e2e2ee;font-family:'Courier New',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 14px 40px;}
+h1{font-size:24px;font-weight:900;background:linear-gradient(90deg,#00e5ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.06em;}
+.sub{font-size:10px;letter-spacing:.28em;color:#444;margin-bottom:5px;}
+.header{text-align:center;margin-bottom:20px;}
+.card{background:#13131e;border:1px solid #1e1e2e;border-radius:12px;padding:18px;margin-bottom:13px;width:100%;max-width:460px;}
+.clabel{font-size:10px;color:#444;letter-spacing:.22em;margin-bottom:13px;}
+.field{margin-bottom:12px;}.field:last-child{margin-bottom:0;}
+.field label{display:block;font-size:11px;color:#777;margin-bottom:5px;letter-spacing:.1em;}
+.field input{width:100%;background:#0a0a14;border:1px solid #2a2a3e;border-radius:8px;color:#e2e2ee;padding:11px 13px;font-size:17px;font-family:inherit;outline:none;}
+.hint{font-size:10px;color:#383848;margin-top:3px;line-height:1.5;}
+.btn{width:100%;max-width:460px;padding:14px 0;border-radius:10px;font-size:13px;letter-spacing:.18em;cursor:pointer;font-family:inherit;border:none;transition:all .2s;display:block;}
+.btn+.btn{margin-top:9px;}
+.btn-primary{background:linear-gradient(135deg,#00e5ff15,#a78bfa15);border:1px solid #00e5ff66!important;color:#00e5ff;}
+.btn-primary:disabled{background:#111;border:1px solid #1e1e1e!important;color:#333;cursor:default;}
+.btn-ghost{background:transparent;border:1px solid #1e1e2e!important;color:#444;}
+.hidden{display:none!important;}
+.vwrap{position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;width:100%;max-width:460px;background:#000;}
+#livevid{width:100%;display:block;transform:scaleX(-1);}
+#overlaycv{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);}
+.badge{position:absolute;top:9px;left:9px;border-radius:6px;padding:3px 9px;font-size:11px;font-family:'Courier New',monospace;pointer-events:none;z-index:10;}
+.ibar{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);padding:9px 12px;font-size:11px;letter-spacing:.06em;text-align:center;z-index:10;}
+#ring-wrap{position:relative;width:110px;height:110px;margin:0 auto 13px;}
+#pring{transform:rotate(-90deg);}
+.rbg{fill:none;stroke:#1e1e2e;stroke-width:8;}
+.rfill{fill:none;stroke:#00e5ff;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .25s;}
+#ring-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+#ring-num{font-size:26px;font-weight:900;color:#00e5ff;line-height:1;}
+.rsub{font-size:10px;color:#444;letter-spacing:.12em;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px;width:100%;max-width:460px;}
+.metric{background:#13131e;border:1px solid #1e1e2e;border-radius:8px;padding:9px 13px;}
+.ml{font-size:10px;color:#444;letter-spacing:.1em;margin-bottom:1px;}
+.mv{font-size:21px;font-weight:700;line-height:1.1;}
+.mv span{font-size:11px;color:#555;margin-left:3px;}
+.srow{display:flex;gap:7px;margin-bottom:11px;width:100%;max-width:460px;}
+.stag{flex:1;border-radius:6px;padding:6px 4px;font-size:10px;text-align:center;font-family:'Courier New',monospace;}
+.good{background:#002212;border:1px solid #00e055;color:#00e055;}
+.bad{background:#1a0000;border:1px solid #e03333;color:#e03333;}
+.warn{background:#181000;border:1px solid #cc8800;color:#cc8800;}
+.debugrow{background:#0a0a00;border:1px solid #2a2a00;border-radius:8px;padding:8px 12px;margin-bottom:11px;font-size:10px;color:#666;line-height:1.8;width:100%;max-width:460px;}
+.result-img{width:100%;border-radius:10px;border:1px solid #1e1e2e;display:block;}
+#result-img-wrap{width:100%;max-width:460px;margin-bottom:13px;}
+.dl-btn{display:block;margin-top:9px;padding:11px 0;text-align:center;background:#0a0a14;border:1px solid #222;border-radius:8px;color:#666;font-size:12px;letter-spacing:.13em;text-decoration:none;font-family:inherit;}
+.optbox{background:#080f08;border:1px solid #152015;border-radius:8px;padding:13px;margin-bottom:13px;font-size:12px;color:#2a5a2a;line-height:1.8;width:100%;max-width:460px;}
+.ot{color:#3a7a3a;margin-bottom:5px;font-size:11px;letter-spacing:.15em;}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.slider-row:last-child{margin-bottom:0;}
+.slider-row label{font-size:11px;color:#666;width:78px;flex-shrink:0;}
+.slider-row input[type=range]{flex:1;accent-color:#00e5ff;}
+.sval{font-size:13px;color:#00e5ff;width:54px;text-align:right;flex-shrink:0;}
+#focal-canvas{width:100%;max-width:460px;border-radius:10px;border:1px solid #1e1e2e;display:block;margin-bottom:13px;}
+.notice{margin-top:16px;font-size:10px;color:#222;text-align:center;line-height:1.7;}
+#errbox{background:#1a0000;border:1px solid #ff4444;border-radius:8px;padding:11px;margin-bottom:12px;font-size:12px;color:#ff8888;width:100%;max-width:460px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="sub">OPTICAL MEASUREMENT SYSTEM</div>
+  <h1>PD + SEG HEIGHT</h1>
+</div>
+
+<!-- SETUP -->
+<div id="s-setup">
+  <div class="card">
+    <div class="clabel">FRAME SPECIFICATIONS</div>
+    <div class="field">
+      <label>LENS WIDTH (mm)</label>
+      <input type="number" id="f-lw" placeholder="e.g. 47" inputmode="decimal"/>
+      <div class="hint">First number on arm: <b style="color:#555">47</b> □ 22 · 40</div>
+    </div>
+    <div class="field">
+      <label>BRIDGE WIDTH (mm)</label>
+      <input type="number" id="f-bw" placeholder="e.g. 22" inputmode="decimal"/>
+      <div class="hint">Second number: 47 □ <b style="color:#555">22</b> · 40</div>
+    </div>
+    <div class="field">
+      <label>LENS HEIGHT (mm)</label>
+      <input type="number" id="f-lh" placeholder="e.g. 40" inputmode="decimal"/>
+      <div class="hint">Third number: 47 □ 22 · <b style="color:#555">40</b></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="clabel">CALIBRATION REFERENCE</div>
+    <div class="field" style="margin-bottom:0">
+      <label>IRIS DIAMETER (mm)</label>
+      <input type="number" id="f-iris" value="11.65" inputmode="decimal"/>
+      <div class="hint">Average adult iris = <b style="color:#555">11.65mm</b>. Leave as default.</div>
+    </div>
+  </div>
+  <div style="background:#0a0a14;border:1px solid #1a1a2a;border-radius:10px;padding:14px;margin-bottom:13px;font-size:11px;color:#444;line-height:1.9;width:100%;max-width:460px;">
+    <div style="color:#555;margin-bottom:4px;letter-spacing:.15em;">INSTRUCTIONS</div>
+    · Glasses on · Hold phone at arm's length (~40cm)<br/>
+    · <b style="color:#666">Look above the phone</b> at a distant point<br/>
+    · Keep still — auto-captures at 150 good samples<br/>
+    · Fine-tune with sliders after
+  </div>
+  <div id="errbox" class="hidden"></div>
+  <button class="btn btn-primary" id="btn-start" onclick="startMeasuring()">START MEASURING</button>
+</div>
+
+<!-- MEASURING -->
+<div id="s-measure" class="hidden">
+  <div class="vwrap">
+    <video id="livevid" playsinline muted autoplay></video>
+    <canvas id="overlaycv"></canvas>
+    <div class="badge" id="mbadge" style="background:rgba(26,0,0,.9);border:1px solid #e03333;color:#e03333;">DETECTING…</div>
+    <div class="ibar" id="ibar" style="color:#ffaa00;">👆 Look above the phone at a distant point</div>
+  </div>
+  <div id="ring-wrap">
+    <svg id="pring" width="110" height="110" viewBox="0 0 110 110">
+      <circle class="rbg" cx="55" cy="55" r="47"/>
+      <circle class="rfill" id="rfill" cx="55" cy="55" r="47" stroke-dasharray="295" stroke-dashoffset="295"/>
+    </svg>
+    <div id="ring-inner">
+      <div id="ring-num">0</div>
+      <div class="rsub">/ 150</div>
+    </div>
+  </div>
+  <div class="debugrow" id="debugrow">iris L: -- R: -- | px/mm: -- | PD: --mm | nose: --mm</div>
+  <div id="live-metrics" class="hidden">
+    <div class="grid2">
+      <div class="metric"><div class="ml">PD TOTAL</div><div class="mv" id="lv-pd" style="color:#00e5ff">--<span>mm</span></div></div>
+      <div class="metric"><div class="ml">PD LEFT / RIGHT</div><div class="mv" style="font-size:14px!important;color:#a78bfa"><span id="lv-pdl">--</span> / <span id="lv-pdr">--</span><span>mm</span></div></div>
+      <div class="metric"><div class="ml">SEG HEIGHT LEFT</div><div class="mv" id="lv-segl" style="color:#ff6b35">--<span>mm</span></div></div>
+      <div class="metric"><div class="ml">SEG HEIGHT RIGHT</div><div class="mv" id="lv-segr" style="color:#ff6b35">--<span>mm</span></div></div>
+    </div>
+    <div class="srow">
+      <div class="stag bad" id="st-a">CENTER</div>
+      <div class="stag bad" id="st-t">LEVEL</div>
+      <div class="stag bad" id="st-d">IRIS</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="finalize()">📸 CAPTURE NOW</button>
+  <!-- Live seg adjustment -->
+  <div style="background:#13131e;border:1px solid #1e1e2e;border-radius:10px;padding:14px;margin-top:9px;width:100%;max-width:460px;">
+    <div style="font-size:10px;color:#444;letter-spacing:.18em;margin-bottom:10px;">ADJUST SEG HEIGHT LIVE</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <label style="font-size:11px;color:#666;width:60px;flex-shrink:0;">SEG L+R</label>
+      <input type="range" id="live-seg-slider" min="0.50" max="0.90" step="0.005"
+        value="0.680" oninput="updateLiveSeg(this.value)"
+        style="flex:1;accent-color:#ff6b35;"/>
+      <div style="font-size:13px;color:#ff6b35;width:54px;text-align:right;flex-shrink:0;" id="live-seg-val">--</div>
+    </div>
+    <div style="font-size:10px;color:#333;margin-top:6px;text-align:center;">Drag until orange line touches frame bottom</div>
+  </div>
+  <button class="btn btn-ghost" onclick="reset()">CANCEL</button>
+</div>
+
+<!-- RESULT -->
+<div id="s-result" class="hidden">
+  <div class="card" id="patient-card">
+    <div class="clabel">PATIENT RECORD</div>
+    <div class="field">
+      <label>PATIENT NAME</label>
+      <input type="text" id="p-name" placeholder="e.g. John Smith" style="width:100%;background:#0a0a14;border:1px solid #2a2a3e;border-radius:8px;color:#e2e2ee;padding:11px 13px;font-size:15px;font-family:inherit;outline:none;"/>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>NOTES</label>
+      <input type="text" id="p-notes" placeholder="e.g. progressive, first pair..." style="width:100%;background:#0a0a14;border:1px solid #2a2a3e;border-radius:8px;color:#e2e2ee;padding:11px 13px;font-size:15px;font-family:inherit;outline:none;"/>
+    </div>
+  </div>
+  <div class="card">
+    <div class="clabel" id="res-label">RESULTS</div>
+    <div class="grid2" style="margin-bottom:10px;">
+      <div class="metric"><div class="ml">TOTAL PD</div><div class="mv" id="r-pd" style="color:#00e5ff;font-size:28px!important;">--<span>mm</span></div></div>
+      <div class="metric"><div class="ml">PD LEFT / RIGHT</div><div class="mv" style="font-size:14px!important;color:#a78bfa"><span id="r-pdl">--</span> / <span id="r-pdr">--</span><span>mm</span></div></div>
+      <div class="metric"><div class="ml">SEG HEIGHT LEFT</div><div class="mv" id="r-segl" style="color:#ff6b35;font-size:22px!important;">--<span>mm</span></div></div>
+      <div class="metric"><div class="ml">SEG HEIGHT RIGHT</div><div class="mv" id="r-segr" style="color:#ff6b35;font-size:22px!important;">--<span>mm</span></div></div>
+    </div>
+    <div style="font-size:11px;color:#333;border-top:1px solid #1a1a2a;padding-top:9px;" id="finfo"></div>
+  </div>
+  <div class="card">
+    <div class="clabel">MANUAL FINE-TUNE</div>
+    <div class="slider-row"><label>PD TOTAL</label><input type="range" id="sl-pd" oninput="updateSliders()"/><div class="sval" id="sv-pd">--</div></div>
+    <div class="slider-row"><label>PD LEFT</label><input type="range" id="sl-pdl" oninput="updateSliders()"/><div class="sval" id="sv-pdl">--</div></div>
+    <div class="slider-row"><label>PD RIGHT</label><input type="range" id="sl-pdr" oninput="updateSliders()"/><div class="sval" id="sv-pdr">--</div></div>
+    <div class="slider-row"><label>SEG L</label><input type="range" id="sl-segl" oninput="updateSliders()"/><div class="sval" id="sv-segl">--</div></div>
+    <div class="slider-row"><label>SEG R</label><input type="range" id="sl-segr" oninput="updateSliders()"/><div class="sval" id="sv-segr">--</div></div>
+  </div>
+  <div style="font-size:10px;color:#444;letter-spacing:.2em;margin-bottom:8px;width:100%;max-width:460px;">OPTICAL CENTER DIAGRAM</div>
+  <canvas id="focal-canvas" height="200"></canvas>
+  <div id="result-img-wrap" class="hidden">
+    <div style="font-size:10px;color:#444;letter-spacing:.2em;margin-bottom:7px;">ANNOTATED PHOTO</div>
+    <img id="result-img" class="result-img"/>
+    <a id="dl-link" class="dl-btn" download="pd-measurement.png">↓ SAVE IMAGE</a>
+  </div>
+  <div class="optbox"><div class="ot">FOR YOUR OPTICIAN</div><span id="opt-text"></span></div>
+  <button class="btn btn-primary" onclick="reset()">MEASURE AGAIN</button>
+</div>
+
+<canvas id="snap" style="display:none"></canvas>
+<div class="notice">FOR GUIDANCE ONLY · NOT A MEDICAL DEVICE · VERIFY WITH A LICENSED OPTICIAN</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script>
+const TARGET=150, CIRC=295;
+let faceMesh,stream,animFrame;
+let samples=[],sampleCount=0,autoFinalized=false;
+let lensW=0,bridgeW=0,lensH=0,irisDiamMm=11.63;
+let lastLM=null;
+let rPdL=0,rPdR=0,rSegL=0,rSegR=0;
+let liveSegRatio=0.680;
+
+const $=id=>document.getElementById(id);
+const show=id=>$(id).classList.remove('hidden');
+const hide=id=>$(id).classList.add('hidden');
+
+function updateLiveSeg(val){
+  liveSegRatio=parseFloat(val);
+  const mmVal=(lensH*liveSegRatio).toFixed(1);
+  $('live-seg-val').textContent=mmVal+'mm';
+}
+
+async function startMeasuring(){
+  lensW=parseFloat($('f-lw').value)||0;
+  bridgeW=parseFloat($('f-bw').value)||0;
+  lensH=parseFloat($('f-lh').value)||0;
+  irisDiamMm=parseFloat($('f-iris').value)||11.65;
+  if(!lensW||!bridgeW||!lensH){alert('Please fill all three frame measurements');return;}
+  hide('errbox');
+  $('btn-start').textContent='LOADING…';$('btn-start').disabled=true;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}}});
+    if(typeof FaceMesh==='undefined') throw new Error('FaceMesh failed to load');
+    const vid=$('livevid');
+    vid.srcObject=stream;
+    await new Promise(r=>{vid.onloadedmetadata=r;});
+    await vid.play();
+    faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+    faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.8,minTrackingConfidence:0.8});
+    faceMesh.onResults(onResults);
+    samples=[];sampleCount=0;autoFinalized=false;lastLM=null;
+    liveSegRatio=0.680;
+    $('live-seg-slider').value=0.680;
+    $('live-seg-val').textContent=(lensH*0.680).toFixed(1)+'mm';
+    hide('s-setup');show('s-measure');
+    loop();
+  }catch(e){
+    $('errbox').textContent='Error: '+e.message;show('errbox');
+    $('btn-start').textContent='START MEASURING';$('btn-start').disabled=false;
+  }
+}
+
+function loop(){
+  const vid=$('livevid');
+  const tick=async()=>{
+    if(vid.readyState>=2&&faceMesh){try{await faceMesh.send({image:vid});}catch(e){}}
+    animFrame=requestAnimationFrame(tick);
+  };tick();
+}
+
+function irisDiamPx(lm,centre,top,right,bottom,left,W,H){
+  const c={x:lm[centre].x*W,y:lm[centre].y*H};
+  const t={x:lm[top].x*W,y:lm[top].y*H};
+  const r={x:lm[right].x*W,y:lm[right].y*H};
+  const bo={x:lm[bottom].x*W,y:lm[bottom].y*H};
+  const l={x:lm[left].x*W,y:lm[left].y*H};
+  return{diam:(Math.hypot(t.x-bo.x,t.y-bo.y)+Math.hypot(r.x-l.x,r.y-l.y))/2,cx:c.x,cy:c.y};
+}
+
+function onResults(res){
+  const vid=$('livevid');
+  const cv=$('overlaycv');
+  const W=vid.videoWidth||640,H=vid.videoHeight||480;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  if(!res.multiFaceLandmarks||!res.multiFaceLandmarks.length){
+    $('mbadge').textContent='NO FACE';hide('live-metrics');lastLM=null;return;
+  }
+  show('live-metrics');
+
+  const lm=res.multiFaceLandmarks[0];
+  const L=irisDiamPx(lm,468,469,470,471,472,W,H);
+  const R=irisDiamPx(lm,473,474,475,476,477,W,H);
+  const avgIrisPx=(L.diam+R.diam)/2;
+  const ppm=avgIrisPx/irisDiamMm;
+
+  const pt=i=>({x:lm[i].x*W,y:lm[i].y*H});
+  const pdTotPx=Math.hypot(R.cx-L.cx,R.cy-L.cy);
+  const pdTotMm=pdTotPx/ppm;
+  const Rin=pt(133),Lin=pt(362);
+  const noseMidX=(Rin.x+Lin.x)/2,noseMidY=(Rin.y+Lin.y)/2;
+  const pdLmm=Math.hypot(L.cx-noseMidX,L.cy-noseMidY)/ppm;
+  const pdRmm=Math.hypot(R.cx-noseMidX,R.cy-noseMidY)/ppm;
+
+  // Seg height per eye — truly independent
+  // Base seg = lensH * 0.650
+  const baseSeg = lensH * liveSegRatio;
+  const irisYDiffMm = (R.cy - L.cy) / ppm;
+  const segL = baseSeg + irisYDiffMm * 0.25;
+  const segR = baseSeg - irisYDiffMm * 0.25;
+  const segPxL = segL * ppm;
+  const segPxR = segR * ppm;
+
+  // Quality
+  const noseTip=pt(1);
+  const pupilMidX=(L.cx+R.cx)/2;
+  const noseDevMm=Math.abs(noseTip.x-pupilMidX)/ppm;
+  const tiltMm=Math.abs(L.cy-R.cy)/ppm;
+  const irisOk=avgIrisPx>14;
+  const aOk=noseDevMm<6;
+  const tOk=tiltMm<4;
+  const ok=aOk&&tOk&&irisOk;
+
+  lastLM={L,R,noseMidX,noseMidY,ppm,segPxL,segPxR,segL,segR};
+
+  if(ok){
+    samples.push({pdTotMm,pdLmm,pdRmm,segL,segR,ppm,irisYDiffMm});
+    if(samples.length>TARGET*2)samples.shift();
+    sampleCount=samples.length;
+  }
+
+  $('debugrow').textContent=
+    'iris L:'+L.diam.toFixed(1)+'px R:'+R.diam.toFixed(1)+'px | px/mm:'+ppm.toFixed(2)+
+    ' | PD:'+pdTotMm.toFixed(1)+'mm | nose:'+noseDevMm.toFixed(1)+'mm'+(aOk?' ✓':' ✗')+
+    ' | tilt:'+tiltMm.toFixed(1)+'mm'+(tOk?' ✓':' ✗');
+
+  // Draw overlay
+  const noseTipPt=noseTip;
+  ctx.strokeStyle=aOk?'#00e57766':'#ff333366';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(noseTipPt.x,noseTipPt.y,5,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(noseTipPt.x,noseTipPt.y);ctx.lineTo(pupilMidX,noseTipPt.y);ctx.stroke();
+  ctx.setLineDash([]);
+
+  const drawIris=(info,col)=>{
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(info.cx,info.cy,info.diam/2,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(info.cx,info.cy,3,0,Math.PI*2);ctx.fill();
+    const r=info.diam/2+8;
+    ctx.beginPath();
+    ctx.moveTo(info.cx-r,info.cy);ctx.lineTo(info.cx+r,info.cy);
+    ctx.moveTo(info.cx,info.cy-r);ctx.lineTo(info.cx,info.cy+r);
+    ctx.stroke();
+  };
+  drawIris(L,'#00e5ff');drawIris(R,'#00e5ff');
+
+  ctx.strokeStyle='#00e5ffaa';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(L.cx,L.cy);ctx.lineTo(R.cx,R.cy);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle='#ffea0077';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(noseMidX,noseMidY-50);ctx.lineTo(noseMidX,noseMidY+segPxL+15);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Seg height lines per eye
+  [[L,segPxL],[R,segPxR]].forEach(([iris,sp])=>{
+    ctx.strokeStyle='#ff6b35';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(iris.cx,iris.cy);ctx.lineTo(iris.cx,iris.cy+sp);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(iris.cx-9,iris.cy+sp);ctx.lineTo(iris.cx+9,iris.cy+sp);ctx.stroke();
+  });
+
+  ctx.strokeStyle='#a78bfa77';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(L.cx,L.cy);ctx.lineTo(noseMidX,L.cy);
+  ctx.moveTo(R.cx,R.cy);ctx.lineTo(noseMidX,R.cy);
+  ctx.stroke();ctx.setLineDash([]);
+
+  ctx.font='bold 15px Courier New';ctx.fillStyle='#00e5ffcc';
+  ctx.fillText('PD '+(pdLmm+pdRmm).toFixed(1)+'mm',10,22);
+
+  // UI
+  $('lv-pd').innerHTML=(pdLmm+pdRmm).toFixed(1)+'<span>mm</span>';
+  $('lv-pdl').textContent=pdLmm.toFixed(1);
+  $('lv-pdr').textContent=pdRmm.toFixed(1);
+  $('lv-segl').innerHTML=segL.toFixed(1)+'<span>mm</span>';
+  $('lv-segr').innerHTML=segR.toFixed(1)+'<span>mm</span>';
+
+  const sa=$('st-a'),st=$('st-t'),sd=$('st-d');
+  sa.textContent=aOk?'✓ CENTERED':'FACE STRAIGHT';sa.className='stag '+(aOk?'good':'bad');
+  st.textContent=tOk?'✓ LEVEL':'LEVEL HEAD';st.className='stag '+(tOk?'good':'bad');
+  sd.textContent=irisOk?'✓ IRIS OK':'MOVE CLOSER';sd.className='stag '+(irisOk?'good':'warn');
+
+  const pct=Math.min(sampleCount/TARGET,1);
+  $('rfill').style.strokeDashoffset=(CIRC*(1-pct)).toFixed(1);
+  $('rfill').style.stroke=pct>=1?'#00e577':'#00e5ff';
+  $('ring-num').textContent=sampleCount;
+
+  const mb=$('mbadge');
+  if(sampleCount>=TARGET){mb.textContent='✓ READY';mb.style.cssText='background:rgba(0,34,15,.9);border:1px solid #00e577;color:#00e5a0;';}
+  else{mb.textContent='COLLECTING '+sampleCount+'/'+TARGET;mb.style.cssText='background:rgba(18,0,0,.9);border:1px solid #e03333;color:#e05555;';}
+
+  const ib=$('ibar');
+  if(sampleCount>=TARGET&&!autoFinalized){
+    ib.textContent='✓ Complete — capturing…';ib.style.color='#00e577';
+    autoFinalized=true;setTimeout(finalize,700);
+  }else if(!ok){
+    ib.textContent=(!aOk?'Face camera straight  ':'')+(!tOk?'Level head  ':'')+(!irisOk?'Move closer':'');
+    ib.style.color='#ffaa00';
+  }else{
+    ib.textContent='👆 Look above the phone at a distant point';
+    ib.style.color='#00e5ff88';
+  }
+}
+
+function finalize(){
+  if(!samples.length)return;
+  const avg=k=>samples.reduce((s,m)=>s+m[k],0)/samples.length;
+  rPdL=avg('pdLmm');rPdR=avg('pdRmm');
+  const baseSegFinal=lensH*liveSegRatio;
+  const avgYDiff=avg('irisYDiffMm');
+  rSegL=baseSegFinal+avgYDiff*0.25;
+  rSegR=baseSegFinal-avgYDiff*0.25;
+
+  const snap=$('snap'),vid=$('livevid'),cv=$('overlaycv');
+  snap.width=vid.videoWidth||640;snap.height=vid.videoHeight||480;
+  const ctx=snap.getContext('2d');
+  // Draw video NOT mirrored — gives examiner/patient view (left=patient's left)
+  ctx.drawImage(vid,0,0);
+  // Overlay was drawn in video coords (unmirrored), draw directly
+  ctx.drawImage(cv,0,0);
+  const patName=$('p-name').value||'';
+  const patNotes=$('p-notes').value||'';
+  const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,snap.width,130);
+  ctx.font='bold 22px Courier New';ctx.fillStyle='#00e5ff';
+  ctx.fillText('PD: '+(rPdL+rPdR).toFixed(1)+' mm',14,30);
+  ctx.font='15px Courier New';ctx.fillStyle='#a78bfa';
+  ctx.fillText('L: '+rPdL.toFixed(1)+'  R: '+rPdR.toFixed(1)+' mm',14,52);
+  ctx.fillStyle='#ff6b35';
+  ctx.fillText('Seg L: '+rSegL.toFixed(1)+'  R: '+rSegR.toFixed(1)+' mm',14,74);
+  if(patName){ctx.fillStyle='#00e577';ctx.font='bold 14px Courier New';ctx.fillText(patName,14,96);}
+  if(patNotes){ctx.fillStyle='#666';ctx.font='12px Courier New';ctx.fillText(patNotes,14,114);}
+  ctx.fillStyle='#ffea0099';ctx.font='11px Courier New';
+  ctx.fillText(date+' | Frame '+lensW+'x'+lensH+' br:'+bridgeW+' | '+samples.length+' samples',14,snap.height-12);
+
+  const img=snap.toDataURL('image/png');
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(animFrame)cancelAnimationFrame(animFrame);
+  hide('s-measure');
+
+  $('res-label').textContent='RESULTS · '+samples.length+' SAMPLES';
+  $('r-pd').innerHTML=(rPdL+rPdR).toFixed(1)+'<span>mm</span>';
+  $('r-segl').innerHTML=rSegL.toFixed(1)+'<span>mm</span>';
+  $('r-segr').innerHTML=rSegR.toFixed(1)+'<span>mm</span>';
+  $('r-pdl').textContent=rPdL.toFixed(1);
+  $('r-pdr').textContent=rPdR.toFixed(1);
+  $('finfo').textContent='Lens: '+lensW+'mm · Bridge: '+bridgeW+'mm · Height: '+lensH+'mm · Iris: '+irisDiamMm+'mm';
+  updateOptText();
+  setSlider('sl-pd','sv-pd',rPdL+rPdR,50,80);
+  setSlider('sl-pdl','sv-pdl',rPdL,24,42);
+  setSlider('sl-pdr','sv-pdr',rPdR,24,42);
+  setSlider('sl-segl','sv-segl',rSegL,10,45);
+  setSlider('sl-segr','sv-segr',rSegR,10,45);
+  $('result-img').src=img;
+  const fname=($('p-name').value||'pd-measurement').replace(/\s+/g,'-').toLowerCase();
+  $('dl-link').href=img;
+  $('dl-link').download=fname+'-'+new Date().toISOString().slice(0,10)+'.png';
+  show('result-img-wrap');drawFocal();show('s-result');
+  // Live update optician box as name/notes are typed
+  $('p-name').oninput=updateOptText;
+  $('p-notes').oninput=updateOptText;
+}
+
+function setSlider(sid,vid2,val,mn,mx){
+  const s=$(sid);s.min=mn;s.max=mx;s.step=0.5;s.value=val.toFixed(1);
+  $(vid2).textContent=val.toFixed(1)+'mm';
+}
+function updateSliders(){
+  rPdL=+$('sl-pdl').value;rPdR=+$('sl-pdr').value;
+  rSegL=+$('sl-segl').value;rSegR=+$('sl-segr').value;
+  $('sv-pd').textContent=(rPdL+rPdR).toFixed(1)+'mm';
+  $('sv-pdl').textContent=rPdL.toFixed(1)+'mm';
+  $('sv-pdr').textContent=rPdR.toFixed(1)+'mm';
+  $('sv-segl').textContent=rSegL.toFixed(1)+'mm';
+  $('sv-segr').textContent=rSegR.toFixed(1)+'mm';
+  $('r-pd').innerHTML=(rPdL+rPdR).toFixed(1)+'<span>mm</span>';
+  $('r-segl').innerHTML=rSegL.toFixed(1)+'<span>mm</span>';
+  $('r-segr').innerHTML=rSegR.toFixed(1)+'<span>mm</span>';
+  $('r-pdl').textContent=rPdL.toFixed(1);
+  $('r-pdr').textContent=rPdR.toFixed(1);
+  updateOptText();drawFocal();
+}
+function updateOptText(){
+  const name=$('p-name').value||'—';
+  const notes=$('p-notes').value||'—';
+  const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+  $('opt-text').innerHTML=
+    '<b style="color:#4a8a4a">'+name+'</b> · '+date+'<br/>'+
+    'Monocular PD — R: '+rPdR.toFixed(1)+' / L: '+rPdL.toFixed(1)+' mm<br/>'+
+    'Binocular PD: '+(rPdL+rPdR).toFixed(1)+' mm<br/>'+
+    'Seg height — L: '+rSegL.toFixed(1)+' / R: '+rSegR.toFixed(1)+' mm<br/>'+
+    '<span style="color:#2a4a2a">Notes: '+notes+'</span>';
+}
+function drawFocal(){
+  const fc=$('focal-canvas');
+  const W=fc.offsetWidth||460;fc.width=W;fc.height=200;
+  const ctx=fc.getContext('2d');
+  ctx.fillStyle='#0a0a14';ctx.fillRect(0,0,W,200);
+  const sc=W/160,cx=W/2,fy=28;
+  const lWpx=lensW*sc,lHpx=lensH*sc*0.55,brPx=bridgeW*sc;
+  ctx.strokeStyle='#2a2a4a';ctx.lineWidth=2;
+  ctx.strokeRect(cx-brPx/2-lWpx,fy,lWpx,lHpx);
+  ctx.strokeRect(cx+brPx/2,fy,lWpx,lHpx);
+  ctx.beginPath();ctx.moveTo(cx-brPx/2,fy+lHpx*0.3);ctx.lineTo(cx+brPx/2,fy+lHpx*0.3);ctx.stroke();
+  const lpx=cx-rPdL*sc,rpx=cx+rPdR*sc;
+  const opL=fy+rSegL*sc*0.55,opR=fy+rSegR*sc*0.55;
+  [[lpx,opL],[rpx,opR]].forEach(([px,opy])=>{
+    ctx.strokeStyle='#ff6b3555';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px,fy);ctx.lineTo(px,fy+lHpx);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#ff6b35';ctx.beginPath();ctx.arc(px,opy,5,0,Math.PI*2);ctx.fill();
+  });
+  ctx.strokeStyle='#00e5ff44';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(lpx,opL);ctx.lineTo(rpx,opR);ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle='#ffea0033';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(cx,fy-6);ctx.lineTo(cx,fy+lHpx+6);ctx.stroke();ctx.setLineDash([]);
+  ctx.textAlign='center';
+  ctx.fillStyle='#00e5ffaa';ctx.font='bold 12px Courier New';
+  ctx.fillText('PD '+(rPdL+rPdR).toFixed(1)+'mm',cx,fy+lHpx+20);
+  ctx.fillStyle='#a78bfaaa';ctx.font='10px Courier New';
+  ctx.fillText('L '+rPdL.toFixed(1),lpx,fy+lHpx+36);
+  ctx.fillText('R '+rPdR.toFixed(1),rpx,fy+lHpx+36);
+  ctx.fillStyle='#ff6b35aa';
+  ctx.fillText('Seg L:'+rSegL.toFixed(1)+' R:'+rSegR.toFixed(1),cx,fy+lHpx+52);
+  ctx.fillStyle='#ff6b35cc';ctx.font='9px Courier New';
+  ctx.fillText('● = optical centre',cx,185);
+  ctx.textAlign='left';
+}
+function reset(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(animFrame)cancelAnimationFrame(animFrame);
+  samples=[];sampleCount=0;autoFinalized=false;lastLM=null;
+  $('btn-start').textContent='START MEASURING';$('btn-start').disabled=false;
+  $('p-name').value='';$('p-notes').value='';
+  ['s-measure','s-result','errbox'].forEach(hide);
+  show('s-setup');
+}
+</script>
+</body>
+</html>

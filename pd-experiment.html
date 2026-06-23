@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>PD Experiment — Verified Distance</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#0c0c12;color:#e2e2ee;font-family:'Courier New',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 12px 24px;}
+h1{font-size:18px;font-weight:900;background:linear-gradient(90deg,#00e5ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.05em;}
+.sub{font-size:10px;color:#444;letter-spacing:.2em;margin-bottom:16px;text-align:center;}
+.card{background:#13131e;border:1px solid #1e1e2e;border-radius:12px;padding:14px 16px;margin-bottom:10px;width:100%;max-width:460px;}
+.card.g{border-color:#00e57766;}
+.card.w{border-color:#ffaa0066;}
+.clabel{font-size:10px;color:#3a7a9a;letter-spacing:.18em;margin-bottom:8px;}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;letter-spacing:.1em;font-weight:700;margin-right:6px;}
+.t-ok{background:#00e577;color:#000;}
+.t-info{background:#00e5ff;color:#000;}
+.t-warn{background:#ffaa00;color:#000;}
+.btn{width:100%;max-width:460px;padding:14px;border-radius:10px;font-size:13px;letter-spacing:.12em;cursor:pointer;font-family:inherit;border:none;display:block;margin-bottom:9px;text-align:center;}
+.btn-primary{background:linear-gradient(135deg,#00e5ff18,#a78bfa18);border:1px solid #00e5ff66!important;color:#00e5ff;}
+.btn-green{background:#00e57718;border:1px solid #00e57766!important;color:#00e577;font-size:15px;padding:16px;}
+.btn-ghost{background:transparent;border:1px solid #1e1e2e!important;color:#444;}
+.btn:disabled{opacity:.4;pointer-events:none;}
+.hidden{display:none!important;}
+
+.cam-wrap{position:relative;width:100%;max-width:460px;margin-bottom:10px;border-radius:10px;overflow:hidden;border:1px solid #1e1e2e;background:#000;aspect-ratio:3/4;}
+#vf{width:100%;height:100%;object-fit:cover;display:block;}
+.badge{position:absolute;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);border:1.5px solid rgba(255,170,0,.7);border-radius:20px;color:#ffaa00;font-size:12px;font-family:inherit;padding:7px 16px;letter-spacing:.08em;white-space:nowrap;transition:all .2s;z-index:5;}
+#dist-badge{top:14px;}
+#height-badge{top:52px;display:none;}
+#capture-overlay{position:absolute;inset:0;pointer-events:none;}
+#btn-capture{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.15);border:3px solid rgba(255,255,255,.7);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#btn-capture .dot{width:46px;height:46px;border-radius:50%;background:#fff;}
+
+.canvas-wrap{position:relative;width:100%;max-width:460px;margin-bottom:8px;overflow:hidden;border-radius:10px;border:1px solid #1e1e2e;background:#000;}
+#cv-main{width:100%;display:block;touch-action:none;cursor:crosshair;}
+.zoom-badge{position:absolute;top:6px;right:8px;background:rgba(0,0,0,.7);color:#00e5ff;font-size:10px;padding:3px 7px;border-radius:5px;pointer-events:none;}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;width:100%;max-width:460px;}
+.metric{background:#13131e;border:1px solid #1e1e2e;border-radius:8px;padding:10px 12px;}
+.ml{font-size:10px;color:#444;margin-bottom:2px;}
+.mv{font-size:24px;font-weight:700;color:#00e5ff;}
+.mv span{font-size:11px;color:#555;margin-left:2px;}
+
+.pt-tabs{display:flex;gap:5px;margin-bottom:8px;width:100%;max-width:460px;}
+.pt-tab{flex:1;padding:9px 4px;border-radius:8px;font-size:11px;border:1px solid #2a2a3e;background:#13131e;color:#666;cursor:pointer;text-align:center;letter-spacing:.04em;}
+.pt-tab.active{border-color:var(--col);color:var(--col);background:color-mix(in srgb,var(--col) 12%,transparent);}
+
+.controller{width:100%;max-width:460px;margin-bottom:10px;}
+.ctrl-row{display:flex;gap:5px;justify-content:center;margin-bottom:7px;align-items:center;}
+.ctrl-label{font-size:10px;color:#444;letter-spacing:.1em;width:60px;text-align:right;margin-right:4px;}
+.step-btn{padding:7px 11px;border-radius:6px;font-size:11px;border:1px solid #2a2a3e;background:#13131e;color:#666;cursor:pointer;}
+.step-btn.active{border-color:#00e5ff;color:#00e5ff;background:#00e5ff15;}
+.dpad{display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px 52px;gap:4px;margin:0 auto;}
+.dpad-btn{border-radius:10px;border:1px solid #2a2a3e;background:#13131e;color:#888;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.dpad-btn:active,.dpad-btn.pressed{background:#00e5ff22;border-color:#00e5ff;color:#00e5ff;}
+.dpad-center{background:#1a1a2e;border-color:#333;color:#555;font-size:9px;text-align:center;line-height:1.3;}
+
+.result-big{font-size:54px;font-weight:700;color:#00e5ff;text-align:center;line-height:1;}
+.result-unit{font-size:13px;color:#555;text-align:center;margin-top:4px;}
+.result-detail{margin-top:12px;font-size:11px;color:#666;line-height:1.8;}
+.result-detail span{color:#00e5ff;}
+
+.notice{margin-top:8px;font-size:10px;color:#333;text-align:center;width:100%;max-width:460px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<h1>PD EXPERIMENT</h1>
+<div class="sub">verified-distance photogrammetry · v0.1</div>
+
+<!-- STEP 1: CAMERA -->
+<div id="s-cam">
+  <div class="card">
+    <span class="tag t-info">STEP 1</span> Hold phone at <strong style="color:#00e5ff">30cm</strong>. Wait for green "GOOD DISTANCE" before capturing.
+  </div>
+
+  <div class="cam-wrap">
+    <video id="vf" autoplay playsinline muted></video>
+    <canvas id="capture-overlay"></canvas>
+    <button id="btn-camswitch" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.5);border:1px solid rgba(0,229,255,.5);border-radius:8px;color:#00e5ff;font-size:11px;padding:6px 10px;cursor:pointer;">🔄 FRONT</button>
+    <div class="badge" id="dist-badge">◷ LOADING MODEL…</div>
+    <div class="badge" id="height-badge" style="border-color:rgba(0,220,80,.9);color:#00e577;">✓ HEIGHT OK</div>
+    <div class="badge" id="tilt-badge" style="bottom:90px;border-color:rgba(255,170,0,.7);color:#ffaa00;display:none;">📐 TILT —</div>
+    <button id="btn-capture"><div class="dot"></div></button>
+  </div>
+
+  <div id="vf-status" style="font-size:10px;color:#444;text-align:center;margin-bottom:8px;"></div>
+</div>
+
+<!-- STEP 2: MARK EYES -->
+<div id="s-mark" class="hidden">
+  <div class="card">
+    <span class="tag t-info" id="mark-tag">STEP 2</span>
+    <span id="mark-txt">Tap roughly on the <strong>center of the right pupil</strong>, then fine-tune with the D-pad.</span>
+  </div>
+
+  <div class="grid2" id="mark-status" style="display:none;">
+    <div class="metric"><div class="ml">R PUPIL</div><div class="mv" id="mv-r" style="font-size:16px;">—</div></div>
+    <div class="metric"><div class="ml">L PUPIL</div><div class="mv" id="mv-l" style="font-size:16px;">—</div></div>
+  </div>
+
+  <div class="canvas-wrap" id="cv-wrap">
+    <canvas id="cv-main"></canvas>
+    <div class="zoom-badge" id="zoom-badge">5×</div>
+  </div>
+
+  <div class="controller" id="dpad-wrap" style="display:none;">
+    <div class="ctrl-row">
+      <span class="ctrl-label">STEP</span>
+      <button class="step-btn active" data-step="1">1px</button>
+      <button class="step-btn" data-step="5">5px</button>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">ZOOM</span>
+      <button class="step-btn" id="z-out">−</button>
+      <span style="color:#a78bfa;font-size:12px;width:30px;text-align:center;" id="z-val">5×</span>
+      <button class="step-btn" id="z-in">+</button>
+    </div>
+    <div class="dpad">
+      <div></div><button class="dpad-btn" id="d-up">▲</button><div></div>
+      <button class="dpad-btn" id="d-left">◀</button>
+      <div class="dpad-btn dpad-center" id="d-center">MOVE<br/>POINT</div>
+      <button class="dpad-btn" id="d-right">▶</button>
+      <div></div><button class="dpad-btn" id="d-down">▼</button><div></div>
+    </div>
+  </div>
+
+  <button class="btn btn-green" id="btn-confirm-pt">✓ CONFIRM — RIGHT PUPIL</button>
+  <button class="btn btn-ghost" id="btn-retake">↺ RETAKE PHOTO</button>
+</div>
+
+<!-- STEP 3: RESULT -->
+<div id="s-result" class="hidden">
+  <div class="card g">
+    <div class="clabel">BINOCULAR PD (computed)</div>
+    <div class="result-big" id="pd-val">—</div>
+    <div class="result-unit">mm</div>
+  </div>
+
+  <div class="card" id="px-card" style="border-color:#a78bfa66;">
+    <div class="clabel">PIXEL MEASUREMENT (for diagnosis)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div><span style="font-size:10px;color:#666;">R pupil x</span><div style="font-size:18px;color:#ff6b35;font-weight:700;" id="px-r">—</div></div>
+      <div><span style="font-size:10px;color:#666;">L pupil x</span><div style="font-size:18px;color:#a78bfa;font-weight:700;" id="px-l">—</div></div>
+    </div>
+    <div style="background:#1a1a2e;border-radius:6px;padding:10px;text-align:center;">
+      <div style="font-size:10px;color:#666;margin-bottom:4px;">Δ Distance</div>
+      <div style="font-size:26px;color:#00e5ff;font-weight:700;" id="px-delta">—</div>
+      <div style="font-size:10px;color:#666;">pixels</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="clabel">CALCULATION DETAILS</div>
+    <div class="result-detail" id="pd-detail"></div>
+  </div>
+
+  <div class="card w" id="exif-card" style="display:none;">
+    <div class="clabel">EXIF / CALIBRATION</div>
+    <div id="exif-text" style="font-size:11px;color:#888;line-height:1.7;"></div>
+  </div>
+
+  <div class="card">
+    <div class="clabel">MANUAL OVERRIDE (if EXIF missing)</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:11px;color:#555;flex:1;">Focal length (mm)</span>
+      <input type="number" id="focal-input" value="5.31" step="0.01" style="width:70px;background:#0a0a14;border:1px solid #2a2a3e;border-radius:6px;color:#00e5ff;font-size:14px;padding:5px 8px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+      <span style="font-size:11px;color:#555;flex:1;">Distance (cm)</span>
+      <input type="number" id="dist-input" value="30" step="0.5" style="width:70px;background:#0a0a14;border:1px solid #2a2a3e;border-radius:6px;color:#00e5ff;font-size:14px;padding:5px 8px;text-align:center;">
+    </div>
+  </div>
+
+  <button class="btn btn-ghost" id="btn-again">↺ NEW MEASUREMENT</button>
+</div>
+
+<div class="notice">EXPERIMENTAL — comparing against known PD for accuracy testing</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const show=id=>$(id).classList.remove('hidden');
+const hide=id=>$(id).classList.add('hidden');
+
+// ── State ──
+const S = {
+  stream: null,
+  facing: 'environment', // rear camera for real measurement
+  capturedBlob: null,
+  capturedImg: null,
+  imgW: 0, imgH: 0,
+  dispScale: 1,
+  markIdx: 0, // 0=R, 1=L
+  marks: [null, null], // {nx, ny} in natural image coords
+  activePos: null,
+  nudgeStep: 1,
+  zoomLevel: 1,
+  focalMM: null,
+  distMM: 300, // 30cm default, confirmed via eye-landmark check
+  sensorWidthMM: 7.21, // Redmi Note 13 HM6 sensor, 1/1.67"
+  faceLandmarker: null,
+  landmarkerLoading: false,
+  landmarkerFailed: false,
+  distInterval: null,
+};
+
+const EYE_DIST_TARGET = 0.208; // calibrated value confirmed accurate at true 30cm
+const EYE_DIST_TOL = 0.010;
+const L_OUTER = 33, R_OUTER = 263;
+
+// ══════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════
+async function startCamera(){
+  const vf=$('vf');
+  if(S.stream){ S.stream.getTracks().forEach(t=>t.stop()); S.stream=null; }
+  try{
+    S.stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:S.facing, width:{ideal:9999,min:1280}, height:{ideal:9999,min:720}}
+    });
+    vf.srcObject = S.stream;
+    vf.style.transform = S.facing==='user' ? 'scaleX(-1)' : 'scaleX(1)';
+    $('vf-status').textContent='';
+    $('btn-camswitch').textContent = S.facing==='user' ? '🔄 REAR' : '🔄 FRONT';
+    startDistanceCheck();
+    enableTilt();
+  }catch(e){
+    $('vf-status').textContent='Camera error: '+e.message;
+  }
+}
+
+$('btn-camswitch').addEventListener('click', ()=>{
+  S.facing = S.facing==='user' ? 'environment' : 'user';
+  startCamera();
+});
+
+// ══════════════════════════════════════
+// DISTANCE CHECK (MediaPipe eye-landmark — proven working method)
+// ══════════════════════════════════════
+async function ensureLandmarker(){
+  if(S.faceLandmarker || S.landmarkerLoading || S.landmarkerFailed) return;
+  S.landmarkerLoading = true;
+  $('dist-badge').textContent = '◷ LOADING MODEL…';
+  try{
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+    const filesetResolver = await vision.FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+    );
+    S.faceLandmarker = await vision.FaceLandmarker.createFromOptions(filesetResolver, {
+      baseOptions:{
+        modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+        delegate:'GPU'
+      },
+      outputFaceBlendshapes:false,
+      runningMode:'VIDEO',
+      numFaces:1
+    });
+  }catch(e){
+    S.landmarkerFailed = true;
+    $('dist-badge').textContent = '⚠ MODEL FAILED — '+e.message;
+  }
+  S.landmarkerLoading = false;
+}
+
+function setDistBadge(state){
+  const b=$('dist-badge');
+  if(state==='good'){
+    b.style.borderColor='rgba(0,220,80,.9)'; b.style.color='#00e577'; b.style.background='rgba(0,40,20,.7)';
+    b.textContent='✓ GOOD DISTANCE';
+  } else if(state==='near'){
+    b.style.borderColor='rgba(255,80,80,.8)'; b.style.color='#ff6666'; b.style.background='rgba(0,0,0,.6)';
+    b.textContent='⊖ TOO CLOSE';
+  } else if(state==='far'){
+    b.style.borderColor='rgba(255,170,0,.8)'; b.style.color='#ffaa00'; b.style.background='rgba(0,0,0,.6)';
+    b.textContent='⊕ TOO FAR';
+  } else {
+    b.style.borderColor='rgba(255,170,0,.6)'; b.style.color='#ffaa00'; b.style.background='rgba(0,0,0,.6)';
+    b.textContent='◷ DETECTING…';
+  }
+}
+function setHeightBadge(state){
+  const b=$('height-badge');
+  if(state==='good'){ b.style.display=''; b.textContent='✓ HEIGHT OK'; b.style.borderColor='rgba(0,220,80,.9)'; b.style.color='#00e577'; }
+  else if(state==='up'){ b.style.display=''; b.textContent='↑ TILT UP MORE'; b.style.borderColor='rgba(255,170,0,.8)'; b.style.color='#ffaa00'; }
+  else if(state==='down'){ b.style.display=''; b.textContent='↓ TILT DOWN MORE'; b.style.borderColor='rgba(255,170,0,.8)'; b.style.color='#ffaa00'; }
+  else { b.style.display='none'; }
+}
+
+// ── Tilt (device orientation) — phone should stay level/vertical,
+// not tilted sideways or rotated, for accurate horizontal pixel measurement.
+let tiltPermissionAsked = false;
+let lastBeta = null, lastGamma = null;
+
+function setTiltBadge(state, text){
+  const b=$('tilt-badge');
+  b.style.display='';
+  if(state==='good'){ b.style.borderColor='rgba(0,220,80,.9)'; b.style.color='#00e577'; b.textContent='✓ LEVEL'; }
+  else { b.style.borderColor='rgba(255,170,0,.8)'; b.style.color='#ffaa00'; b.textContent=text; }
+}
+
+function onOrientation(e){
+  // beta = front-back tilt (-180..180), gamma = left-right tilt (-90..90)
+  const beta = e.beta, gamma = e.gamma;
+  if(beta===null || gamma===null) return;
+  lastBeta=beta; lastGamma=gamma;
+
+  // Phone held upright facing subject: beta typically ~60-90° when tilted
+  // back to align crosshair with eyes (since held below eye level, tilted up).
+  // We mainly want to catch SIDEWAYS roll (gamma far from 0) — that introduces
+  // rotation error in the horizontal pixel measurement.
+  const gammaTol = 8; // degrees
+  if(Math.abs(gamma) > gammaTol){
+    setTiltBadge('warn', gamma>0 ? '↻ LEVEL — ROTATED RIGHT' : '↺ LEVEL — ROTATED LEFT');
+  } else {
+    setTiltBadge('good');
+  }
+}
+
+async function enableTilt(){
+  if(tiltPermissionAsked) return;
+  tiltPermissionAsked = true;
+  if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+    try{
+      const res = await DeviceOrientationEvent.requestPermission();
+      if(res === 'granted') window.addEventListener('deviceorientation', onOrientation);
+      else $('tilt-badge').style.display='none';
+    }catch(e){ $('tilt-badge').style.display='none'; }
+  } else if('DeviceOrientationEvent' in window){
+    window.addEventListener('deviceorientation', onOrientation);
+  } else {
+    $('tilt-badge').style.display='none';
+  }
+}
+
+// Track current measured eye-corner ratio for use at capture time
+let currentEyeRatio = null;
+let currentDistConfirmed = false;
+
+function startDistanceCheck(){
+  if(S.distInterval) clearInterval(S.distInterval);
+  setDistBadge('detecting');
+  ensureLandmarker();
+  const vf=$('vf');
+  let lastTs=-1;
+
+  S.distInterval = setInterval(()=>{
+    if(!S.faceLandmarker || !vf.videoWidth) return;
+    const ts = performance.now();
+    if(ts===lastTs) return;
+    lastTs = ts;
+
+    let result;
+    try{ result = S.faceLandmarker.detectForVideo(vf, ts); }
+    catch(e){ return; }
+
+    if(!result || !result.faceLandmarks || result.faceLandmarks.length===0){
+      setDistBadge('detecting'); setHeightBadge(null);
+      currentDistConfirmed = false;
+      return;
+    }
+
+    const lm = result.faceLandmarks[0];
+    const p1=lm[L_OUTER], p2=lm[R_OUTER];
+    const dx=p2.x-p1.x, dy=p2.y-p1.y;
+    const eyeDist = Math.sqrt(dx*dx+dy*dy);
+    currentEyeRatio = eyeDist;
+
+    if(Math.abs(eyeDist-EYE_DIST_TARGET) <= EYE_DIST_TOL){
+      setDistBadge('good'); currentDistConfirmed = true;
+    } else {
+      setDistBadge(eyeDist < EYE_DIST_TARGET ? 'far' : 'near');
+      currentDistConfirmed = false;
+    }
+
+    const eyeY = (p1.y+p2.y)/2;
+    const targetY = 165/400;
+    const tolY = 0.04;
+    if(eyeY < targetY-tolY) setHeightBadge('down');
+    else if(eyeY > targetY+tolY) setHeightBadge('up');
+    else setHeightBadge('good');
+  }, 200);
+}
+
+// ══════════════════════════════════════
+// CAPTURE
+// ══════════════════════════════════════
+$('btn-capture').addEventListener('click', doCapture);
+
+function doCapture(){
+  const vf=$('vf');
+  if(!vf.videoWidth) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = vf.videoWidth;
+  canvas.height = vf.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(vf, 0, 0);
+
+  // Distance used for the photogrammetry calc = 30cm if confirmed,
+  // otherwise still 30cm assumed but flagged as unconfirmed in the result.
+  S.distMM = 300;
+  S.distConfirmedAtCapture = currentDistConfirmed;
+  S.eyeRatioAtCapture = currentEyeRatio;
+
+  canvas.toBlob((blob)=>{
+    S.capturedBlob = blob;
+    readEXIF(blob);
+
+    const img = new Image();
+    img.onload = ()=>{
+      S.capturedImg = img;
+      S.imgW = img.naturalWidth;
+      S.imgH = img.naturalHeight;
+      setupMarkCanvas();
+      goMark();
+    };
+    img.src = URL.createObjectURL(blob);
+  }, 'image/jpeg', 0.92);
+
+  if(S.distInterval){ clearInterval(S.distInterval); S.distInterval=null; }
+  if(S.stream){ S.stream.getTracks().forEach(t=>t.stop()); }
+}
+
+// ── EXIF focal length reader ──
+async function readEXIF(blob){
+  try{
+    const buf = await blob.arrayBuffer();
+    const view = new DataView(buf);
+    if(view.getUint16(0) !== 0xFFD8){ useFallbackFocal('Not JPEG'); return; }
+    let offset=2;
+    while(offset < view.byteLength-4){
+      const marker = view.getUint16(offset);
+      const len = view.getUint16(offset+2);
+      if(marker===0xFFE1){ parseEXIF(view, offset+4, len-2); return; }
+      if(marker===0xFFDA) break;
+      offset += 2+len;
+    }
+    useFallbackFocal('No EXIF segment found');
+  }catch(e){ useFallbackFocal('Read error: '+e.message); }
+}
+
+function parseEXIF(view, start, len){
+  const hdr = String.fromCharCode(view.getUint8(start),view.getUint8(start+1),view.getUint8(start+2),view.getUint8(start+3));
+  if(hdr !== 'Exif'){ useFallbackFocal('No Exif header'); return; }
+  const ts = start+6;
+  const le = view.getUint16(ts) === 0x4949;
+  const r16 = o => view.getUint16(ts+o, le);
+  const r32 = o => view.getUint32(ts+o, le);
+
+  function searchIFD(ifdOff){
+    const n = r16(ifdOff);
+    for(let i=0;i<n;i++){
+      const e = ifdOff+2+i*12;
+      const tag = r16(e);
+      if(tag===0x920A){ // FocalLength
+        const off=r32(e+8);
+        const num=r32(off), den=r32(off+4);
+        if(den>0) return num/den;
+      }
+      if(tag===0x8769){ // ExifIFD pointer
+        const sub=r32(e+8);
+        const res=searchIFD(sub);
+        if(res) return res;
+      }
+    }
+    return null;
+  }
+
+  const ifdOffset = r32(4);
+  const focal = searchIFD(ifdOffset);
+  if(focal){
+    S.focalMM = focal;
+    showExifResult('EXIF focal length: <span>'+focal.toFixed(2)+' mm</span>');
+  } else {
+    useFallbackFocal('FocalLength tag not found');
+  }
+}
+
+function useFallbackFocal(reason){
+  S.focalMM = 5.31; // Redmi Note 13 confirmed working value from earlier tests
+  showExifResult('⚠ '+reason+' — using default <span>5.31mm</span>');
+}
+
+function showExifResult(html){
+  $('exif-card').style.display='';
+  $('exif-text').innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// MARK PUPILS (reusing D-pad/zoom pattern)
+// ══════════════════════════════════════
+const canvas = $('cv-main');
+const ctx = canvas.getContext('2d');
+
+function setupMarkCanvas(){
+  const wrap = $('cv-wrap');
+  const maxW = wrap.offsetWidth || (window.innerWidth-28);
+  const aspect = S.imgH/S.imgW;
+  canvas.width = S.imgW;
+  canvas.height = S.imgH;
+  canvas.style.width = maxW+'px';
+  canvas.style.height = (maxW*aspect)+'px';
+  S.dispScale = maxW/S.imgW;
+  drawAll();
+}
+
+function goMark(){
+  hide('s-cam'); show('s-mark');
+  S.markIdx=0; S.marks=[null,null]; S.activePos=null;
+  $('mark-status').style.display='none';
+  $('dpad-wrap').style.display='none';
+  $('btn-confirm-pt').style.display='';
+  $('btn-confirm-pt').textContent='✓ CONFIRM — RIGHT PUPIL';
+  $('mark-tag').textContent='STEP 2';
+  $('mark-txt').innerHTML='<strong>Tap</strong> on the right pupil. Auto-detection will find the center. Fine-tune with D-pad if needed.';
+}
+
+function detectPupilCenter(centerX, centerY, searchRadius = 90) {
+  if (!S.capturedImg) return null;
+  
+  try {
+    // Create a temporary canvas to sample the image
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = S.imgW;
+    tempCanvas.height = S.imgH;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(S.capturedImg, 0, 0);
+    
+    // Define search region
+    const x1 = Math.max(0, Math.floor(centerX - searchRadius));
+    const y1 = Math.max(0, Math.floor(centerY - searchRadius));
+    const x2 = Math.min(S.imgW, Math.ceil(centerX + searchRadius));
+    const y2 = Math.min(S.imgH, Math.ceil(centerY + searchRadius));
+    const w = x2 - x1;
+    const h = y2 - y1;
+    
+    if (w < 10 || h < 10) return null;
+    
+    const imageData = tempCtx.getImageData(x1, y1, w, h);
+    const data = imageData.data;
+    
+    // Find the darkest pixels - adaptive threshold
+    let pixels = [];
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const brightness = (r + g + b) / 3;
+      pixels.push({ idx: i / 4, brightness });
+    }
+    
+    // Sort by brightness and take the darkest 15%
+    pixels.sort((a, b) => a.brightness - b.brightness);
+    const darkPixels = pixels.slice(0, Math.max(10, Math.floor(pixels.length * 0.15)));
+    
+    if (darkPixels.length < 5) return null;
+    
+    // Calculate centroid
+    let sumX = 0, sumY = 0;
+    darkPixels.forEach(p => {
+      const py = Math.floor(p.idx / w);
+      const px = p.idx % w;
+      sumX += px;
+      sumY += py;
+    });
+    
+    const centroidX = x1 + sumX / darkPixels.length;
+    const centroidY = y1 + sumY / darkPixels.length;
+    
+    return { nx: centroidX, ny: centroidY };
+  } catch (e) {
+    console.error('Pupil detection error:', e);
+    return null;
+  }
+}
+
+function onCanvasTap(e){
+  e.preventDefault();
+  if(S.markIdx>1) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  const nx = (cx-rect.left)/S.dispScale;
+  const ny = (cy-rect.top)/S.dispScale;
+
+  // Try automatic pupil detection
+  const detected = detectPupilCenter(nx, ny, 90);
+  if (detected) {
+    console.log('Auto-detected pupil at', detected);
+    S.activePos = detected;
+  } else {
+    console.log('Detection failed, using manual tap position');
+    S.activePos = {nx, ny};
+  }
+  
+  $('mark-status').style.display='grid';
+  $('dpad-wrap').style.display='';
+  drawAll();
+}
+
+function setStep(s){
+  S.nudgeStep=s;
+  [1,5].forEach(v=>document.querySelector('[data-step="'+v+'"]').classList.toggle('active', v===s));
+}
+document.querySelectorAll('[data-step]').forEach(b=>{
+  b.addEventListener('click', ()=>setStep(parseInt(b.dataset.step)));
+});
+
+function nudge(dir){
+  if(!S.activePos) return;
+  const s=S.nudgeStep;
+  if(dir==='left')  S.activePos.nx = Math.max(0, S.activePos.nx-s);
+  if(dir==='right') S.activePos.nx = Math.min(S.imgW, S.activePos.nx+s);
+  if(dir==='up')    S.activePos.ny = Math.max(0, S.activePos.ny-s);
+  if(dir==='down')  S.activePos.ny = Math.min(S.imgH, S.activePos.ny+s);
+  drawAll();
+}
+
+let repeatTimer=null, repeatInterval=null;
+function startRepeat(dir, btn){
+  nudge(dir); btn.classList.add('pressed');
+  repeatTimer = setTimeout(()=>{ repeatInterval=setInterval(()=>nudge(dir),80); }, 300);
+}
+function stopRepeat(btn){
+  clearTimeout(repeatTimer); clearInterval(repeatInterval);
+  if(btn) btn.classList.remove('pressed');
+}
+[['d-up','up'],['d-down','down'],['d-left','left'],['d-right','right']].forEach(([id,dir])=>{
+  const btn=$(id);
+  btn.addEventListener('touchstart', e=>{e.preventDefault(); startRepeat(dir,btn);}, {passive:false});
+  btn.addEventListener('touchend',   e=>{e.preventDefault(); stopRepeat(btn);}, {passive:false});
+  btn.addEventListener('mousedown', ()=>startRepeat(dir,btn));
+  btn.addEventListener('mouseup',   ()=>stopRepeat(btn));
+});
+document.addEventListener('touchend', ()=>stopRepeat(null));
+
+$('z-in').addEventListener('click', ()=>{ S.zoomLevel=Math.min(8,S.zoomLevel+1); $('z-val').textContent=S.zoomLevel+'×'; $('zoom-badge').textContent=S.zoomLevel+'×'; drawAll(); });
+$('z-out').addEventListener('click', ()=>{ S.zoomLevel=Math.max(1,S.zoomLevel-1); $('z-val').textContent=S.zoomLevel+'×'; $('zoom-badge').textContent=S.zoomLevel+'×'; drawAll(); });
+
+function drawAll(){
+  if(!S.capturedImg) return;
+  // Determine view window based on zoom + active point
+  const zoom = S.zoomLevel;
+  const vw = S.imgW/zoom, vh = S.imgH/zoom;
+  const ap = S.activePos || S.marks[S.markIdx] || {nx:S.imgW/2, ny:S.imgH/2};
+  let vx = Math.max(0, Math.min(S.imgW-vw, ap.nx-vw/2));
+  let vy = Math.max(0, Math.min(S.imgH-vh, ap.ny-vh/2));
+
+  const dispW = canvas.clientWidth || 320;
+  const dispH = Math.round(dispW*(vh/vw));
+  const dpr = window.devicePixelRatio||1;
+  canvas.style.height = dispH+'px';
+  canvas.width = Math.round(dispW*dpr);
+  canvas.height = Math.round(dispH*dpr);
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.drawImage(S.capturedImg, vx,vy,vw,vh, 0,0,dispW,dispH);
+
+  const sx=dispW/vw, sy=dispH/vh;
+  const toDisp = (x,y)=>({dx:(x-vx)*sx, dy:(y-vy)*sy});
+
+  // Draw confirmed marks
+  S.marks.forEach((m,i)=>{
+    if(!m) return;
+    const d = toDisp(m.nx, m.ny);
+    drawCrosshair(d.dx, d.dy, i===0?'#ff6b35':'#a78bfa', i===0?'R':'L', false);
+  });
+  // Draw active (unconfirmed) position
+  if(S.activePos){
+    const d = toDisp(S.activePos.nx, S.activePos.ny);
+    drawCrosshair(d.dx, d.dy, S.markIdx===0?'#ff6b35':'#a78bfa', S.markIdx===0?'R':'L', true);
+  }
+
+  // Update zoom badge visibility
+  $('zoom-badge').style.display = zoom > 1 ? '' : 'none';
+}
+
+function drawCrosshair(x,y,col,lbl,active){
+  ctx.save();
+  ctx.strokeStyle=col; ctx.shadowColor=col;
+  ctx.lineWidth = active?2:1.5;
+  ctx.globalAlpha = active?0.95:0.6;
+  ctx.shadowBlur=8;
+  const arm=14, gap=5;
+  ctx.beginPath();
+  ctx.moveTo(x-arm,y); ctx.lineTo(x-gap,y);
+  ctx.moveTo(x+gap,y); ctx.lineTo(x+arm,y);
+  ctx.moveTo(x,y-arm); ctx.lineTo(x,y-gap);
+  ctx.moveTo(x,y+gap); ctx.lineTo(x,y+arm);
+  ctx.stroke();
+  ctx.globalAlpha=1; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+  ctx.font='bold 13px Courier New'; ctx.fillStyle=col; ctx.shadowBlur=0;
+  ctx.fillText(lbl, x+10, y-10);
+  ctx.restore();
+}
+
+$('btn-confirm-pt').addEventListener('click', ()=>{
+  if(!S.activePos) return;
+  S.marks[S.markIdx] = {...S.activePos};
+
+  if(S.markIdx===0){
+    $('mv-r').textContent = 'x='+S.activePos.nx.toFixed(0);
+    S.markIdx=1; S.activePos=null;
+    $('mark-tag').textContent='STEP 2';
+    $('mark-txt').innerHTML='<strong>Tap</strong> on the left pupil. Auto-detection will find the center. Fine-tune with D-pad if needed.';
+    $('btn-confirm-pt').textContent='✓ CONFIRM — LEFT PUPIL';
+    $('dpad-wrap').style.display='none';
+    drawAll();
+  } else {
+    $('mv-l').textContent = 'x='+S.activePos.nx.toFixed(0);
+    S.markIdx=2; S.activePos=null;
+    computePD();
+    goResult();
+  }
+});
+
+$('btn-retake').addEventListener('click', ()=>{
+  hide('s-mark'); show('s-cam');
+  S.capturedImg=null; S.capturedBlob=null;
+  startCamera();
+});
+
+// ══════════════════════════════════════
+// COMPUTE PD
+// ══════════════════════════════════════
+function computePD(){
+  const R=S.marks[0], L=S.marks[1];
+  if(!R||!L||!S.focalMM) return;
+
+  const pdPx = Math.abs(L.nx - R.nx);
+  const physPxMM = S.sensorWidthMM / S.imgW;
+  const mmPerPx = S.distMM * physPxMM / S.focalMM;
+  const pdMM = pdPx * mmPerPx;
+
+  // Display pixel measurements prominently
+  $('px-r').textContent = R.nx.toFixed(0);
+  $('px-l').textContent = L.nx.toFixed(0);
+  $('px-delta').textContent = pdPx.toFixed(1);
+
+  $('pd-val').textContent = pdMM.toFixed(1);
+  $('pd-detail').innerHTML =
+    'Sensor width: <span>'+S.sensorWidthMM.toFixed(2)+'mm</span> · Image width: <span>'+S.imgW+'px</span><br>'+
+    'mm/px @ '+S.distMM/10+'cm: <span>'+mmPerPx.toFixed(4)+'</span><br>'+
+    'Focal: <span>'+S.focalMM.toFixed(2)+'mm</span> · Distance: <span>'+(S.distMM/10).toFixed(0)+'cm</span><br>'+
+    'Distance confirmed: <span>'+(S.distConfirmedAtCapture?'YES ✓':'NO')+'</span>'+
+    (S.eyeRatioAtCapture ? ' (eye-ratio '+(S.eyeRatioAtCapture*100).toFixed(1)+'%)' : '');
+}
+
+function recomputeFromInputs(){
+  S.focalMM = parseFloat($('focal-input').value) || S.focalMM;
+  S.distMM = (parseFloat($('dist-input').value)||30) * 10;
+  computePD();
+}
+$('focal-input').addEventListener('input', recomputeFromInputs);
+$('dist-input').addEventListener('input', recomputeFromInputs);
+
+function goResult(){
+  hide('s-mark'); show('s-result');
+  $('focal-input').value = S.focalMM ? S.focalMM.toFixed(2) : '5.31';
+  $('dist-input').value = (S.distMM/10).toFixed(0);
+}
+
+$('btn-again').addEventListener('click', ()=>{
+  hide('s-result'); show('s-cam');
+  S.marks=[null,null]; S.markIdx=0; S.capturedImg=null; S.capturedBlob=null;
+  $('exif-card').style.display='none';
+  startCamera();
+});
+
+// ══ Init ══
+startCamera();
+</script>
+</body>
+</html>
